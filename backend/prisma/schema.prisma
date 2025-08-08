@@ -1,0 +1,135 @@
+// ==================================================
+// Prisma Schema for LaunchWise (FAANG++ Edition)
+// ==================================================
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================================================
+// CORE MODELS
+// ==================================================
+
+model Experiment {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  status      Status  @default(DRAFT)
+
+  startDate   DateTime?
+  endDate     DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // --- Relationships ---
+  variants    Variant[]
+  team        Team     @relation(fields: [teamId], references: [id])
+  teamId      String
+  apiKey      ApiKey   @relation(fields: [apiKeyId], references: [id])
+  apiKeyId    String   @unique
+
+  // Analytics caching / optimization
+  totalEvents Int      @default(0) // Precomputed event count for quick dashboard loads.
+
+  @@unique([teamId, name])
+  @@index([status]) // For quick filtering by status
+}
+
+model Variant {
+  id           String  @id @default(cuid())
+  name         String
+  trafficSplit Float   @default(0.5)
+  isControl    Boolean @default(false)
+
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  experimentId String
+
+  events       Event[]
+
+  @@index([experimentId, isControl]) // Fast lookup of control variant
+}
+
+model Event {
+  id          String     @id @default(cuid())
+  type        EventType
+  metadata    Json?
+  sessionId   String
+  userId      String?
+  url         String?
+  userAgent   String?    // Browser/device info
+  country     String?    // Geo-based analytics
+  createdAt   DateTime   @default(now())
+
+  variant     Variant    @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId   String
+
+  @@index([variantId, createdAt])
+  @@index([type])
+}
+
+// ==================================================
+// AUTH & MULTI-TENANCY MODELS
+// ==================================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  role         UserRole @default(MEMBER) // RBAC: OWNER, ADMIN, MEMBER
+  createdAt    DateTime @default(now())
+
+  team         Team     @relation(fields: [teamId], references: [id])
+  teamId       String
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users       User[]
+  experiments Experiment[]
+  apiKeys     ApiKey[]
+}
+
+model ApiKey {
+  id         String      @id @default(cuid())
+  key        String      @unique @default(uuid()) // Secure random UUID
+  lastUsedAt DateTime?   // For monitoring usage & rotation
+  createdAt  DateTime    @default(now())
+
+  team       Team        @relation(fields: [teamId], references: [id])
+  teamId     String
+  experiment Experiment?
+}
+
+// ==================================================
+// ENUMS
+// ==================================================
+
+enum Status {
+  DRAFT
+  RUNNING
+  PAUSED
+  COMPLETED
+}
+
+enum EventType {
+  CLICK
+  CONVERSION
+  PAGEVIEW
+  CUSTOM
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
