@@ -51,8 +51,8 @@ function App() {
 
   const handleCreateExperiment = async (data: any) => {
     // IMPORTANT: Replace with your actual IDs
-    const teamId = "YOUR_TEAM_ID"; 
-    const apiKeyId = "YOUR_API_KEY_ID"; 
+    const teamId = "cmfjafh850003i36kgygxesi8"; 
+    const apiKeyId = "cme2rb8c20004i39gp1ag2yap"; 
 
     const payload = {
       name: data.name,
