@@ -1,10 +1,18 @@
 // backend/src/routes/experiment.routes.ts
 import { Router } from 'express';
-import { getAllExperiments } from '../controllers/experiment.controller'; // <-- Check this import
+import { 
+    createExperiment, 
+    getAllExperiments,
+    updateExperiment,
+    deleteExperiment 
+} from '../controllers/experiment.controller';
 
 const router = Router();
 
-// CRITICAL LINE: Make sure this is correct
-router.get('/experiments', getAllExperiments);
+// Define the full CRUD routes for experiments
+router.post('/experiments', createExperiment);      // Create
+router.get('/experiments', getAllExperiments);      // Read (All)
+router.patch('/experiments/:id', updateExperiment); // Update
+router.delete('/experiments/:id', deleteExperiment);  // Delete
 
-export default router; // <-- Make sure it's exporting
+export default router;

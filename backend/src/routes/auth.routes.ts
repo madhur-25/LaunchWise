@@ -1,10 +1,10 @@
-// backend/src/routes/auth.routes.ts
+// backend/src/routes/experiment.routes.ts
 import { Router } from 'express';
-import { signUp } from '../controllers/auth.controller';
+import { getAllExperiments } from '../controllers/experiment.controller'; // <-- Check this import
 
 const router = Router();
 
-// Define the route: POST /api/v1/auth/signup
-router.post('/signup', signUp);
+// CRITICAL LINE: Make sure this is correct
+router.get('/experiments', getAllExperiments);
 
-export default router;
+export default router; // <-- Make sure it's exporting
