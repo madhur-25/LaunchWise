@@ -1,45 +1,28 @@
 import { useState, useEffect } from 'react';
 import { CreateExperimentModal } from './components/CreateExperimentModal';
-import { EditExperimentModal } from './components/EditExperimentModal'; // Import the new modal
+import { EditExperimentModal } from './components/EditExperimentModal';
 import { ExperimentCard } from './components/ExperimentCard';
-import { Plus } from 'lucide-react';
-
-// --- Type Definitions ---
-export interface Variant {
-  id: string;
-  name: string;
-  trafficSplit: number;
-  isControl: boolean;
-  experimentId: string;
-}
-
-export interface Experiment {
-  id: string;
-  name: string;
-  description: string | null;
-  status: string;
-  variants: Variant[];
-}
+import { SkeletonCard } from './components/SkeletonCard';
+import { Plus, Beaker } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
+import { api } from './services/api'; // <-- Using our new API service
+import { Experiment } from './types';   // <-- Using our new types file
 
 function App() {
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-  // NEW: State to manage the edit modal and the experiment being edited
   const [editingExperiment, setEditingExperiment] = useState<Experiment | null>(null);
 
   const fetchExperiments = async () => {
     setIsLoading(true);
-    setError(null);
     try {
-      const response = await fetch('/api/v1/experiments');
-      if (!response.ok) throw new Error('Network response was not ok');
-      const data: Experiment[] = await response.json();
+      // Cleaner API call
+      const data = await api.getExperiments();
       setExperiments(data);
     } catch (error) {
-      if (error instanceof Error) setError(error.message);
+      toast.error("Failed to load experiments.");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -50,9 +33,9 @@ function App() {
   }, []);
 
   const handleCreateExperiment = async (data: any) => {
-    // IMPORTANT: Replace with your actual IDs
-    const teamId = "cmfjafh850003i36kgygxesi8"; 
-    const apiKeyId = "cme2rb8c20004i39gp1ag2yap"; 
+    // NOTE: These IDs are hardcoded. This is the next thing we'll fix in Phase 2.
+    const teamId = "PASTE_YOUR_REAL_TEAM_ID_HERE";
+    const apiKeyId = "PASTE_YOUR_REAL_API_KEY_ID_HERE"; 
 
     const payload = {
       name: data.name,
@@ -65,61 +48,112 @@ function App() {
       ],
     };
 
-    try {
-      const response = await fetch('/api/v1/experiments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) throw new Error('Failed to create experiment');
-      setIsCreateModalOpen(false);
-      fetchExperiments();
-    } catch (error) {
-      console.error(error);
-      alert('Error: Could not create experiment.');
-    }
+    // Using the API service makes this much more readable
+    toast.promise(api.createExperiment(payload), {
+      loading: 'Creating experiment...',
+      success: () => {
+        fetchExperiments();
+        setIsCreateModalOpen(false);
+        return <b>Experiment created!</b>;
+      },
+      error: <b>Could not create experiment.</b>,
+    });
   };
 
-  // NEW: Function to handle updating an experiment
   const handleUpdateExperiment = async (experimentId: string, data: { name: string, description: string }) => {
-    try {
-      const response = await fetch(`/api/v1/experiments/${experimentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to update experiment');
-      
-      setEditingExperiment(null); // Close the modal on success
-      fetchExperiments(); // Re-fetch all data to show the update
-    } catch (error) {
-      console.error(error);
-      alert('Error: Could not update experiment.');
-    }
+    toast.promise(api.updateExperiment(experimentId, data), {
+      loading: 'Saving changes...',
+      success: () => {
+        fetchExperiments();
+        setEditingExperiment(null);
+        return <b>Changes saved!</b>;
+      },
+      error: <b>Could not save changes.</b>,
+    });
   };
 
-  const handleDeleteExperiment = async (experimentId: string) => {
-    if (!window.confirm('Are you sure you want to delete this experiment?')) return;
-
-    try {
-      const response = await fetch(`/api/v1/experiments/${experimentId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete experiment');
-      setExperiments(prev => prev.filter(exp => exp.id !== experimentId));
-    } catch (error) {
-      console.error(error);
-      alert('Error: Could not delete experiment.');
-    }
+  const handleDeleteExperiment = (experimentId: string) => {
+    // The actual delete logic is now in the API service
+    toast.promise(api.deleteExperiment(experimentId), {
+      loading: 'Deleting experiment...',
+      success: () => {
+        // Optimistic UI update
+        setExperiments(prev => prev.filter(exp => exp.id !== experimentId));
+        return <b>Experiment deleted.</b>;
+      },
+      error: <b>Could not delete experiment.</b>,
+    });
   };
 
-  // NEW: Function to open the edit modal
-  const handleOpenEditModal = (experiment: Experiment) => {
-    setEditingExperiment(experiment);
+  const confirmDelete = (experimentId: string) => {
+    toast((t) => (
+      <span className="flex flex-col items-center gap-4">
+        <b>Are you sure?</b>
+        This action cannot be undone.
+        <div className="flex gap-2">
+          <button
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
+            onClick={() => {
+              handleDeleteExperiment(experimentId);
+              toast.dismiss(t.id);
+            }}
+          >
+            Delete
+          </button>
+          <button
+            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg text-sm"
+            onClick={() => toast.dismiss(t.id)}
+          >
+            Cancel
+          </button>
+        </div>
+      </span>
+    ), {
+      style: {
+        background: '#374151',
+        color: '#FFFFFF',
+      },
+    });
+  };
+
+  // Helper function to keep our JSX clean
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      );
+    }
+
+    if (experiments.length === 0) {
+      return (
+        <div className="mt-16 flex flex-col items-center gap-4 text-center text-gray-500">
+          <Beaker size={48} />
+          <h3 className="text-xl font-semibold">No Experiments Found</h3>
+          <p>Click the "+ Create Experiment" button to get started.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {experiments.map(exp => (
+          <ExperimentCard 
+            key={exp.id} 
+            experiment={exp}
+            onDelete={() => confirmDelete(exp.id)}
+            onEdit={() => setEditingExperiment(exp)}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
     <>
+      <Toaster position="top-center" reverseOrder={false} />
+
       <div className="flex min-h-screen bg-gray-900 text-white font-sans">
         <aside className="w-64 bg-gray-800 p-6 flex flex-col">
           <h1 className="text-2xl font-bold mb-8">LaunchWise</h1>
@@ -136,30 +170,16 @@ function App() {
               Create Experiment
             </button>
           </header>
-
-          {!isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {experiments.map(exp => (
-                <ExperimentCard 
-                  key={exp.id} 
-                  experiment={exp}
-                  onDelete={handleDeleteExperiment}
-                  onEdit={handleOpenEditModal} // <-- Pass the new edit handler
-                />
-              ))}
-            </div>
-          )}
+          
+          {renderContent()}
         </main>
       </div>
 
-      {/* Render the Create Modal */}
       <CreateExperimentModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreateExperiment}
       />
-      
-      {/* Render the new Edit Modal */}
       <EditExperimentModal
         isOpen={editingExperiment !== null}
         onClose={() => setEditingExperiment(null)}
@@ -171,3 +191,4 @@ function App() {
 }
 
 export default App;
+

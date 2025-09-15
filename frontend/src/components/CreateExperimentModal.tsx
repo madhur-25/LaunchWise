@@ -1,94 +1,107 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion'; // <-- Import motion
 
-// Define the shape of the data we'll send to the API
-interface NewExperimentData {
-  name: string;
-  description: string;
-  variants: { name: string }[];
-}
-
-// Define the component's props
 interface CreateExperimentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (data: NewExperimentData) => void;
+  onCreate: (data: { name: string; description: string; variantName: string }) => void;
 }
 
 export function CreateExperimentModal({ isOpen, onClose, onCreate }: CreateExperimentModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [variantA, setVariantA] = useState('Control');
-  const [variantB, setVariantB] = useState('Variant B');
+  const [variantName, setVariantName] = useState('Variant B');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !variantA || !variantB) {
-      alert('Please fill out all required fields.');
-      return;
-    }
-    onCreate({
-      name,
-      description,
-      variants: [{ name: variantA }, { name: variantB }],
-    });
+    if (!name || !variantName) return;
+    onCreate({ name, description, variantName });
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
+  // AnimatePresence is a wrapper that allows us to animate components when they are removed from the DOM.
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 p-8 rounded-lg shadow-2xl w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6">Create New Experiment</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="name" className="block text-slate-400 mb-2">Experiment Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="description" className="block text-slate-400 mb-2">Description</label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-          </div>
-           <div className="mb-6">
-            <label className="block text-slate-400 mb-2">Variants (A/B)</label>
-            <input
-              type="text"
-              value={variantA}
-              onChange={(e) => setVariantA(e.target.value)}
-              className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 mb-2 text-white"
-              required
-            />
-             <input
-              type="text"
-              value={variantB}
-              onChange={(e) => setVariantB(e.target.value)}
-              className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 text-white"
-              required
-            />
-          </div>
-          <div className="flex justify-end space-x-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-md text-white bg-slate-600 hover:bg-slate-500">
-              Cancel
-            </button>
-            <button type="submit" className="px-4 py-2 rounded-md text-white bg-sky-600 hover:bg-sky-500 font-semibold">
-              Create
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
+          <motion.div
+            className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-2xl font-bold mb-6 text-white">Create New Experiment</h2>
+            <form onSubmit={handleSubmit}>
+              {/* --- Form Inputs and Buttons --- */}
+              <div className="mb-4">
+                <label htmlFor="name" className="block text-gray-300 text-sm font-bold mb-2">
+                  Experiment Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="w-full bg-gray-700 text-white rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Homepage Headline Test"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="description" className="block text-gray-300 text-sm font-bold mb-2">
+                  Description (Optional)
+                </label>
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="w-full bg-gray-700 text-white rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="What is this experiment trying to achieve?"
+                  rows={3}
+                />
+              </div>
+               <div className="mb-6">
+                <label htmlFor="variantName" className="block text-gray-300 text-sm font-bold mb-2">
+                  Variant Name
+                </label>
+                <input
+                  type="text"
+                  id="variantName"
+                  value={variantName}
+                  onChange={e => setVariantName(e.target.value)}
+                  className="w-full bg-gray-700 text-white rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 'New Awesome Headline'"
+                  required
+                />
+                 <p className="text-xs text-gray-500 mt-1">This will be your first variant (Variant B). 'Control' is created automatically.</p>
+              </div>
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Create Experiment
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
+

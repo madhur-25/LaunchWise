@@ -1,18 +1,27 @@
-// backend/src/routes/experiment.routes.ts
 import { Router } from 'express';
 import { 
-    createExperiment, 
-    getAllExperiments,
-    updateExperiment,
-    deleteExperiment 
+  createExperiment, 
+  getAllExperiments, 
+  updateExperiment, 
+  deleteExperiment 
 } from '../controllers/experiment.controller';
+
+import { validate } from '../middleware/validate'; 
+import { createExperimentSchema, updateExperimentSchema } from '../schemas/experiment.schema'; 
 
 const router = Router();
 
-// Define the full CRUD routes for experiments
-router.post('/experiments', createExperiment);      // Create
-router.get('/experiments', getAllExperiments);      // Read (All)
-router.patch('/experiments/:id', updateExperiment); // Update
-router.delete('/experiments/:id', deleteExperiment);  // Delete
+// This route for getting data doesn't need validation
+router.get('/experiments', getAllExperiments);
+
+
+router.post('/experiments', validate(createExperimentSchema), createExperiment);
+
+
+router.patch('/experiments/:id', validate(updateExperimentSchema), updateExperiment);
+
+
+router.delete('/experiments/:id', deleteExperiment);
 
 export default router;
+
