@@ -5,23 +5,21 @@ import {
   updateExperiment, 
   deleteExperiment 
 } from '../controllers/experiment.controller';
+import { validate } from '../middleware/validate';
+import { createExperimentSchema, updateExperimentSchema } from '../schemas/experiment.schema';
 
-import { validate } from '../middleware/validate'; 
-import { createExperimentSchema, updateExperimentSchema } from '../schemas/experiment.schema'; 
+import { protect } from '../middleware/auth.middleware'; // 1. Import the bouncer
 
 const router = Router();
 
-// This route for getting data doesn't need validation
+//  main dashboard can load.
 router.get('/experiments', getAllExperiments);
 
-
-router.post('/experiments', validate(createExperimentSchema), createExperiment);
-
-
-router.patch('/experiments/:id', validate(updateExperimentSchema), updateExperiment);
-
-
-router.delete('/experiments/:id', deleteExperiment);
+// 2. Apply the 'protect' middleware to all routes that modify data.
+//  `protect` -> `validate` -> `controller`.
+router.post('/experiments', protect, validate(createExperimentSchema), createExperiment);
+router.patch('/experiments/:id', protect, validate(updateExperimentSchema), updateExperiment);
+router.delete('/experiments/:id', protect, deleteExperiment);
 
 export default router;
 

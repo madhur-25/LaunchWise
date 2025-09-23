@@ -1,10 +1,15 @@
-// backend/src/routes/experiment.routes.ts
 import { Router } from 'express';
-import { getAllExperiments } from '../controllers/experiment.controller'; // <-- Check this import
+
+import { signUp, login } from '../controllers/auth.controller';
 
 const router = Router();
 
-// CRITICAL LINE: Make sure this is correct
-router.get('/experiments', getAllExperiments);
+// This defines the POST endpoint at /signup
+router.post('/signup', signUp);
 
-export default router; // <-- Make sure it's exporting
+// This defines the POST endpoint at /login
+router.post('/login', login);
+
+// This makes the router available to be imported by your main index.ts file
+export default router;
+

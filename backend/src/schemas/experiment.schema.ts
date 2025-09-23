@@ -1,12 +1,10 @@
 import { z } from 'zod';
 
-// Schema for creating a new experiment
+
 export const createExperimentSchema = z.object({
   body: z.object({
     name: z.string().min(1, { message: "Experiment name is required" }),
     description: z.string().optional(),
-    teamId: z.string().cuid({ message: "Invalid Team ID" }),
-    apiKeyId: z.string().cuid({ message: "Invalid API Key ID" }),
     variants: z.array(
       z.object({
         name: z.string().min(1, { message: "Variant name is required" }),
@@ -17,7 +15,7 @@ export const createExperimentSchema = z.object({
   }),
 });
 
-// Schema for updating an experiment
+// The schema for updating an experiment remains correct.
 export const updateExperimentSchema = z.object({
   body: z.object({
     name: z.string().min(1).optional(),
@@ -28,3 +26,4 @@ export const updateExperimentSchema = z.object({
     id: z.string().cuid({ message: "Invalid Experiment ID" }),
   }),
 });
+

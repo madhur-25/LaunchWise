@@ -1,8 +1,3 @@
-// ==================================================
-// Prisma Schema for LaunchWise (Corrected Edition)
-// ==================================================
-// Docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,46 +7,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================================================
-// CORE MODELS
-// ==================================================
-
 model Experiment {
-  id          String  @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String?
-  status      Status  @default(DRAFT)
-
-  startDate DateTime?
-  endDate   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // --- Relationships ---
-  variants  Variant[]
-  team      Team      @relation(fields: [teamId], references: [id])
-  teamId    String
-  apiKey    ApiKey    @relation(fields: [apiKeyId], references: [id])
-  apiKeyId  String // <-- FIXED: Removed @unique constraint.
-
-  // Analytics caching / optimization
-  totalEvents Int @default(0)
+  status      Status    @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  teamId      String
+  apiKeyId    String
+  totalEvents Int       @default(0)
+  apiKey      ApiKey    @relation(fields: [apiKeyId], references: [id])
+  team        Team      @relation(fields: [teamId], references: [id])
+  variants    Variant[]
 
   @@unique([teamId, name])
   @@index([status])
 }
 
 model Variant {
-  id           String  @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
-  trafficSplit Float   @default(0.5)
-  isControl    Boolean @default(false)
-
-  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  trafficSplit Float      @default(0.5)
+  isControl    Boolean    @default(false)
   experimentId String
-
   events       Event[]
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
 
   @@index([experimentId, isControl])
 }
@@ -66,17 +49,12 @@ model Event {
   userAgent String?
   country   String?
   createdAt DateTime  @default(now())
-
-  variant   Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   variantId String
+  variant   Variant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@index([variantId, createdAt])
   @@index([type])
 }
-
-// ==================================================
-// AUTH & MULTI-TENANCY MODELS
-// ==================================================
 
 model User {
   id        String   @id @default(cuid())
@@ -84,35 +62,29 @@ model User {
   name      String?
   role      UserRole @default(MEMBER)
   createdAt DateTime @default(now())
-
-  team   Team @relation(fields: [teamId], references: [id])
-  teamId String
+  teamId    String
+  password  String
+  team      Team     @relation(fields: [teamId], references: [id])
 }
 
 model Team {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-
-  users       User[]
-  experiments Experiment[]
+  id          String       @id @default(cuid())
+  name        String
+  createdAt   DateTime     @default(now())
   apiKeys     ApiKey[]
+  experiments Experiment[]
+  users       User[]
 }
 
 model ApiKey {
-  id         String   @id @default(cuid())
-  key        String   @unique @default(uuid())
-  lastUsedAt DateTime?
-  createdAt  DateTime @default(now())
-
-  team        Team         @relation(fields: [teamId], references: [id])
+  id          String       @id @default(cuid())
+  key         String       @unique @default(uuid())
+  lastUsedAt  DateTime?
+  createdAt   DateTime     @default(now())
   teamId      String
-  experiments Experiment[] // <-- FIXED: Changed from one-to-one to one-to-many
+  team        Team         @relation(fields: [teamId], references: [id])
+  experiments Experiment[]
 }
-
-// ==================================================
-// ENUMS
-// ==================================================
 
 enum Status {
   DRAFT
