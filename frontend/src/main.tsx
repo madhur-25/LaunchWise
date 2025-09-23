@@ -1,11 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-// This import has been corrected from .jsx to .tsx
-import App from './App.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App'; 
+import { AuthProvider } from './context/AuthContext'; // <-- 1. Import the provider
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {/* 2. Wrap your entire App component with the AuthProvider */}
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </StrictMode>,
-)
+);
+
